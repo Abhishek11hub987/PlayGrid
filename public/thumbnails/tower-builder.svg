@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300">
+  <defs>
+    <linearGradient id="bg_tower-builder" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1c0b2b"/>
+      <stop offset="100%" stop-color="#45166b"/>
+    </linearGradient>
+    <radialGradient id="glow_tower-builder" cx="50%" cy="40%" r="50%">
+      <stop offset="0%" stop-color="#ec4899" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#ec4899" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="400" height="300" fill="url(#bg_tower-builder)"/>
+  <rect width="400" height="300" fill="url(#glow_tower-builder)"/>
+
+  <!-- Grid lines -->
+  <g stroke="rgba(255,255,255,0.05)" stroke-width="1">
+    <line x1="0" y1="75" x2="400" y2="75"/>
+    <line x1="0" y1="150" x2="400" y2="150"/>
+    <line x1="0" y1="225" x2="400" y2="225"/>
+    <line x1="100" y1="0" x2="100" y2="300"/>
+    <line x1="200" y1="0" x2="200" y2="300"/>
+    <line x1="300" y1="0" x2="300" y2="300"/>
+  </g>
+
+  <!-- Game Icon Artwork -->
+  <g><rect x="140" y="150" width="120" height="22" rx="4" fill="#854dff"/>
+           <rect x="150" y="126" width="100" height="22" rx="4" fill="#0ea5e9"/>
+           <rect x="165" y="102" width="70" height="22" rx="4" fill="#ec4899"/>
+           <rect x="175" y="78" width="50" height="22" rx="4" fill="#fbbf24"/></g>
+
+  <!-- Bottom vignette -->
+  <rect y="210" width="400" height="90" fill="rgba(8,5,18,0.85)"/>
+  <line x1="0" y1="210" x2="400" y2="210" stroke="#ec4899" stroke-width="2"/>
+
+  <!-- Typography -->
+  <text x="20" y="248" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="20" font-weight="900" fill="#ffffff">Tower Builder</text>
+  <text x="20" y="272" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="700" fill="#ec4899" letter-spacing="1">STACK PHYSICS ARCADE</text>
+</svg>

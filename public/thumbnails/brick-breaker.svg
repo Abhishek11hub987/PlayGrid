@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300">
+  <defs>
+    <linearGradient id="bg_brick-breaker" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#130924"/>
+      <stop offset="100%" stop-color="#2f1257"/>
+    </linearGradient>
+    <radialGradient id="glow_brick-breaker" cx="50%" cy="40%" r="50%">
+      <stop offset="0%" stop-color="#a855f7" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#a855f7" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="400" height="300" fill="url(#bg_brick-breaker)"/>
+  <rect width="400" height="300" fill="url(#glow_brick-breaker)"/>
+
+  <!-- Grid lines -->
+  <g stroke="rgba(255,255,255,0.05)" stroke-width="1">
+    <line x1="0" y1="75" x2="400" y2="75"/>
+    <line x1="0" y1="150" x2="400" y2="150"/>
+    <line x1="0" y1="225" x2="400" y2="225"/>
+    <line x1="100" y1="0" x2="100" y2="300"/>
+    <line x1="200" y1="0" x2="200" y2="300"/>
+    <line x1="300" y1="0" x2="300" y2="300"/>
+  </g>
+
+  <!-- Game Icon Artwork -->
+  <g><rect x="130" y="70" width="30" height="12" rx="2" fill="#ef4444"/>
+           <rect x="165" y="70" width="30" height="12" rx="2" fill="#f97316"/>
+           <rect x="200" y="70" width="30" height="12" rx="2" fill="#eab308"/>
+           <rect x="235" y="70" width="30" height="12" rx="2" fill="#10b981"/>
+           <rect x="170" y="170" width="60" height="10" rx="5" fill="#38bdf8"/>
+           <circle cx="200" cy="140" r="6" fill="#fff"/></g>
+
+  <!-- Bottom vignette -->
+  <rect y="210" width="400" height="90" fill="rgba(8,5,18,0.85)"/>
+  <line x1="0" y1="210" x2="400" y2="210" stroke="#a855f7" stroke-width="2"/>
+
+  <!-- Typography -->
+  <text x="20" y="248" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="20" font-weight="900" fill="#ffffff">Brick Breaker</text>
+  <text x="20" y="272" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="700" fill="#a855f7" letter-spacing="1">COSMIC ARKANOID</text>
+</svg>

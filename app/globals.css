@@ -1,0 +1,127 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --radius: 0.75rem;
+    --background: 220 20% 6%;
+    --foreground: 210 40% 98%;
+    --card: 222 25% 8%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 25% 8%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 265 100% 56%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 217 32% 17%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217 32% 17%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 199 89% 48%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 217 32% 17%;
+    --input: 217 32% 17%;
+    --ring: 265 100% 56%;
+  }
+
+  * {
+    @apply border-border;
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-surface-950 text-white antialiased;
+    font-family: var(--font-geist-sans), 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }
+
+  /* Selection */
+  ::selection { background: rgba(103, 32, 255, 0.4); color: white; }
+}
+
+@layer components {
+  /* Gaming gradient backgrounds */
+  .bg-gaming {
+    background: linear-gradient(135deg, #0f0a1e 0%, #1a0533 50%, #0a1628 100%);
+  }
+
+  /* Glowing text */
+  .text-glow {
+    text-shadow: 0 0 20px rgba(103, 32, 255, 0.5);
+  }
+
+  .text-glow-blue {
+    text-shadow: 0 0 20px rgba(14, 165, 233, 0.5);
+  }
+
+  /* Glass morphism card */
+  .glass-card {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  /* Gradient border */
+  .gradient-border {
+    position: relative;
+    background: linear-gradient(135deg, #0f0a1e, #1a0533);
+    border-radius: var(--radius);
+  }
+
+  .gradient-border::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    padding: 1px;
+    border-radius: inherit;
+    background: linear-gradient(135deg, rgba(103,32,255,0.5), rgba(14,165,233,0.5));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+  }
+
+  /* Game card hover */
+  .game-card {
+    @apply relative overflow-hidden rounded-xl transition-all duration-300 cursor-pointer;
+  }
+
+  .game-card:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 20px 40px rgba(103, 32, 255, 0.2);
+  }
+
+  /* Demo data badge */
+  .demo-badge {
+    @apply inline-flex items-center gap-1 rounded-full bg-warning-500/20 border border-warning-500/30 px-2 py-0.5 text-xs font-medium text-yellow-300;
+  }
+
+  /* Sidebar nav item */
+  .nav-item {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/60 transition-all hover:text-white hover:bg-white/8;
+  }
+
+  .nav-item.active {
+    @apply text-white bg-brand-500/15 border border-brand-500/20;
+  }
+}
+
+@layer utilities {
+  .bg-white\/8 { background-color: rgba(255, 255, 255, 0.08); }
+  .text-gradient {
+    background: linear-gradient(135deg, #a37aff 0%, #38bdf8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}

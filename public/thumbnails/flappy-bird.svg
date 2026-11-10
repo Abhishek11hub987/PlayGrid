@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300">
+  <defs>
+    <linearGradient id="bg_flappy-bird" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#091c33"/>
+      <stop offset="100%" stop-color="#133e70"/>
+    </linearGradient>
+    <radialGradient id="glow_flappy-bird" cx="50%" cy="40%" r="50%">
+      <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#06b6d4" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="400" height="300" fill="url(#bg_flappy-bird)"/>
+  <rect width="400" height="300" fill="url(#glow_flappy-bird)"/>
+
+  <!-- Grid lines -->
+  <g stroke="rgba(255,255,255,0.05)" stroke-width="1">
+    <line x1="0" y1="75" x2="400" y2="75"/>
+    <line x1="0" y1="150" x2="400" y2="150"/>
+    <line x1="0" y1="225" x2="400" y2="225"/>
+    <line x1="100" y1="0" x2="100" y2="300"/>
+    <line x1="200" y1="0" x2="200" y2="300"/>
+    <line x1="300" y1="0" x2="300" y2="300"/>
+  </g>
+
+  <!-- Game Icon Artwork -->
+  <g><rect x="130" y="50" width="36" height="60" fill="#10b981"/>
+           <rect x="130" y="150" width="36" height="60" fill="#10b981"/>
+           <circle cx="210" cy="130" r="16" fill="#f59e0b"/>
+           <circle cx="216" cy="126" r="4" fill="#fff"/>
+           <circle cx="217" cy="126" r="2" fill="#000"/>
+           <polygon points="224,128 234,132 224,136" fill="#ef4444"/></g>
+
+  <!-- Bottom vignette -->
+  <rect y="210" width="400" height="90" fill="rgba(8,5,18,0.85)"/>
+  <line x1="0" y1="210" x2="400" y2="210" stroke="#06b6d4" stroke-width="2"/>
+
+  <!-- Typography -->
+  <text x="20" y="248" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="20" font-weight="900" fill="#ffffff">Flappy Wings</text>
+  <text x="20" y="272" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="700" fill="#06b6d4" letter-spacing="1">SKY FLIGHT ADVENTURE</text>
+</svg>

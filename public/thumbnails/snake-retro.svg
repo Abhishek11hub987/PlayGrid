@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300">
+  <defs>
+    <linearGradient id="bg_snake-retro" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#061a12"/>
+      <stop offset="100%" stop-color="#0d3826"/>
+    </linearGradient>
+    <radialGradient id="glow_snake-retro" cx="50%" cy="40%" r="50%">
+      <stop offset="0%" stop-color="#22c55e" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#22c55e" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="400" height="300" fill="url(#bg_snake-retro)"/>
+  <rect width="400" height="300" fill="url(#glow_snake-retro)"/>
+
+  <!-- Grid lines -->
+  <g stroke="rgba(255,255,255,0.05)" stroke-width="1">
+    <line x1="0" y1="75" x2="400" y2="75"/>
+    <line x1="0" y1="150" x2="400" y2="150"/>
+    <line x1="0" y1="225" x2="400" y2="225"/>
+    <line x1="100" y1="0" x2="100" y2="300"/>
+    <line x1="200" y1="0" x2="200" y2="300"/>
+    <line x1="300" y1="0" x2="300" y2="300"/>
+  </g>
+
+  <!-- Game Icon Artwork -->
+  <g><rect x="160" y="110" width="22" height="22" rx="4" fill="#4ade80"/>
+           <rect x="184" y="110" width="22" height="22" rx="4" fill="#22c55e"/>
+           <rect x="208" y="110" width="22" height="22" rx="4" fill="#22c55e"/>
+           <rect x="208" y="134" width="22" height="22" rx="4" fill="#16a34a"/>
+           <circle cx="140" cy="150" r="10" fill="#ef4444"/></g>
+
+  <!-- Bottom vignette -->
+  <rect y="210" width="400" height="90" fill="rgba(8,5,18,0.85)"/>
+  <line x1="0" y1="210" x2="400" y2="210" stroke="#22c55e" stroke-width="2"/>
+
+  <!-- Typography -->
+  <text x="20" y="248" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="20" font-weight="900" fill="#ffffff">Snake Retro X</text>
+  <text x="20" y="272" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="700" fill="#22c55e" letter-spacing="1">NEON ARCADE SLITHER</text>
+</svg>

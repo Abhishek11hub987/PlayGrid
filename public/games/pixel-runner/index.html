@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Pixel Runner</title>
+  <script src="/sdk/playgrid-sdk.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0a0614; color: #fff; font-family: monospace; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
+    #canvas { background: linear-gradient(180deg, #180e29 0%, #2f1b4e 60%, #4a287a 100%); border-radius: 12px; box-shadow: 0 10px 40px rgba(103,32,255,0.4); max-width: 100%; max-height: 100%; }
+    .ui-overlay { position: absolute; top: 16px; left: 16px; font-size: 18px; font-weight: bold; text-shadow: 0 2px 4px #000; pointer-events: none; }
+    .msg { position: absolute; font-size: 20px; font-weight: bold; background: rgba(0,0,0,0.85); padding: 16px 28px; border-radius: 12px; border: 2px solid #854dff; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="ui-overlay">
+    <div>SCORE: <span id="score">0</span></div>
+    <div>COINS: <span id="coins">0</span></div>
+  </div>
+  <canvas id="canvas" width="800" height="450"></canvas>
+  <div id="startMsg" class="msg">
+    <div style="font-size:26px;color:#a37aff;margin-bottom:8px;">PIXEL RUNNER</div>
+    <div style="font-size:14px;color:#ccc;margin-bottom:12px;">Space / Up Arrow / Tap to Jump</div>
+    <div style="font-size:16px;color:#38bdf8;">CLICK OR PRESS SPACE TO START</div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const scoreEl = document.getElementById('score');
+    const coinsEl = document.getElementById('coins');
+    const startMsg = document.getElementById('startMsg');
+
+    let state = 'WAIT';
+    let score = 0;
+    let coins = 0;
+    let speed = 6;
+    let frame = 0;
+
+    const player = {
+      x: 80,
+      y: 330,
+      w: 32,
+      h: 40,
+      vy: 0,
+      gravity: 0.85,
+      jumpStrength: -15,
+      grounded: true,
+      color: '#0ea5e9'
+    };
+
+    let obstacles = [];
+    let coinItems = [];
+    let particles = [];
+
+    function reset() {
+      score = 0;
+      coins = 0;
+      speed = 6;
+      frame = 0;
+      player.y = 330;
+      player.vy = 0;
+      player.grounded = true;
+      obstacles = [];
+      coinItems = [];
+      particles = [];
+      scoreEl.innerText = '0';
+      coinsEl.innerText = '0';
+    }
+
+    function jump() {
+      if (state === 'WAIT' || state === 'OVER') {
+        reset();
+        state = 'PLAY';
+        startMsg.style.display = 'none';
+        return;
+      }
+      if (player.grounded) {
+        player.vy = player.jumpStrength;
+        player.grounded = false;
+        createParticles(player.x + 16, player.y + 40, '#a37aff', 6);
+      }
+    }
+
+    window.addEventListener('keydown', e => {
+      if (e.code === 'Space' || e.code === 'ArrowUp') {
+        e.preventDefault();
+        jump();
+      }
+    });
+    window.addEventListener('pointerdown', jump);
+
+    function createParticles(x, y, color, count) {
+      for (let i = 0; i < count; i++) {
+        particles.push({
+          x, y,
+          vx: (Math.random() - 0.5) * 6,
+          vy: (Math.random() - 0.5) * 6,
+          life: 25,
+          color
+        });
+      }
+    }
+
+    function update() {
+      frame++;
+      if (state === 'PLAY') {
+        score += 1;
+        scoreEl.innerText = Math.floor(score / 5);
+        if (frame % 300 === 0) speed += 0.5;
+
+        // Player physics
+        player.vy += player.gravity;
+        player.y += player.vy;
+        if (player.y >= 330) {
+          player.y = 330;
+          player.vy = 0;
+          player.grounded = true;
+        }
+
+        // Spawn obstacles
+        if (frame % Math.max(50, Math.floor(110 - speed * 4)) === 0) {
+          const type = Math.random() > 0.3 ? 'spike' : 'block';
+          obstacles.push({
+            x: 820,
+            y: type === 'spike' ? 340 : 320,
+            w: 24,
+            h: type === 'spike' ? 30 : 50,
+            type
+          });
+        }
+
+        // Spawn coins
+        if (frame % 80 === 0) {
+          coinItems.push({
+            x: 820,
+            y: 260 + (Math.sin(frame) * 40),
+            r: 10
+          });
+        }
+
+        // Update obstacles
+        for (let i = obstacles.length - 1; i >= 0; i--) {
+          const ob = obstacles[i];
+          ob.x -= speed;
+
+          // Collision
+          if (
+            player.x < ob.x + ob.w &&
+            player.x + player.w > ob.x &&
+            player.y < ob.y + ob.h &&
+            player.y + player.h > ob.y
+          ) {
+            state = 'OVER';
+            const finalScore = Math.floor(score / 5);
+            createParticles(player.x + 16, player.y + 20, '#ef4444', 30);
+            startMsg.innerHTML = '<div style="font-size:24px;color:#ef4444;margin-bottom:8px;">GAME OVER</div><div style="font-size:16px;color:#fff;margin-bottom:12px;">Score: ' + finalScore + '</div><div style="font-size:14px;color:#38bdf8;">TAP TO RETRY</div>';
+            startMsg.style.display = 'block';
+            if (window.PlayGrid) PlayGrid.submitScore(finalScore);
+          }
+
+          if (ob.x < -40) obstacles.splice(i, 1);
+        }
+
+        // Update coins
+        for (let i = coinItems.length - 1; i >= 0; i--) {
+          const c = coinItems[i];
+          c.x -= speed;
+          // Collect
+          const dist = Math.hypot((player.x + 16) - c.x, (player.y + 20) - c.y);
+          if (dist < 26) {
+            coins += 1;
+            coinsEl.innerText = coins;
+            score += 100;
+            createParticles(c.x, c.y, '#f59e0b', 10);
+            coinItems.splice(i, 1);
+            continue;
+          }
+          if (c.x < -30) coinItems.splice(i, 1);
+        }
+      }
+
+      // Update particles
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life--;
+        if (p.life <= 0) particles.splice(i, 1);
+      }
+    }
+
+    function render() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Starfield background
+      ctx.fillStyle = 'rgba(255,255,255,0.4)';
+      for (let i = 0; i < 40; i++) {
+        const sx = ((i * 37 + (frame * 0.2)) % canvas.width);
+        const sy = (i * 23) % 280;
+        ctx.fillRect(sx, sy, 2, 2);
+      }
+
+      // Ground
+      ctx.fillStyle = '#1e1136';
+      ctx.fillRect(0, 370, canvas.width, 80);
+      ctx.fillStyle = '#854dff';
+      ctx.fillRect(0, 370, canvas.width, 4);
+
+      // Grid effect on ground
+      ctx.strokeStyle = 'rgba(103,32,255,0.3)';
+      ctx.lineWidth = 1;
+      const offset = (frame * speed) % 40;
+      for (let x = -offset; x < canvas.width; x += 40) {
+        ctx.beginPath();
+        ctx.moveTo(x, 374);
+        ctx.lineTo(x - 60, 450);
+        ctx.stroke();
+      }
+
+      // Draw Coins
+      for (const c of coinItems) {
+        ctx.save();
+        ctx.fillStyle = '#f59e0b';
+        ctx.beginPath();
+        ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#fef08a';
+        ctx.beginPath();
+        ctx.arc(c.x - 2, c.y - 2, c.r * 0.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // Draw Obstacles
+      for (const ob of obstacles) {
+        ctx.fillStyle = '#ef4444';
+        if (ob.type === 'spike') {
+          ctx.beginPath();
+          ctx.moveTo(ob.x, ob.y + ob.h);
+          ctx.lineTo(ob.x + ob.w / 2, ob.y);
+          ctx.lineTo(ob.x + ob.w, ob.y + ob.h);
+          ctx.closePath();
+          ctx.fill();
+        } else {
+          ctx.fillRect(ob.x, ob.y, ob.w, ob.h);
+          ctx.strokeStyle = '#fca5a5';
+          ctx.strokeRect(ob.x, ob.y, ob.w, ob.h);
+        }
+      }
+
+      // Draw Player
+      if (state !== 'OVER') {
+        ctx.save();
+        ctx.fillStyle = player.color;
+        ctx.fillRect(player.x, player.y, player.w, player.h);
+        // Visor
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(player.x + 16, player.y + 8, 12, 8);
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillRect(player.x + 18, player.y + 10, 8, 4);
+        // Jetpack trail if jumping
+        if (!player.grounded) {
+          ctx.fillStyle = '#f59e0b';
+          ctx.fillRect(player.x - 6, player.y + player.h - 10, 6, 8);
+        }
+        ctx.restore();
+      }
+
+      // Draw Particles
+      for (const p of particles) {
+        ctx.fillStyle = p.color;
+        ctx.fillRect(p.x, p.y, 3, 3);
+      }
+    }
+
+    function loop() {
+      update();
+      render();
+      requestAnimationFrame(loop);
+    }
+    loop();
+  </script>
+</body>
+</html>
+

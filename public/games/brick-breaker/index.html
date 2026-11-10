@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Brick Breaker Galaxy</title>
+  <script src="/sdk/playgrid-sdk.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; }
+    body {
+      background: #090514;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: hidden;
+      user-select: none;
+    }
+    #gameCanvas {
+      background: linear-gradient(180deg, #0e0a1f 0%, #170e33 60%, #291252 100%);
+      border-radius: 14px;
+      box-shadow: 0 16px 40px rgba(103,32,255,0.4);
+      max-width: 100%;
+      max-height: 100%;
+      cursor: none;
+    }
+    .hud {
+      width: 100%;
+      max-width: 600px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 16px;
+      font-weight: 800;
+      font-size: 15px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .msg-box {
+      position: absolute;
+      background: rgba(13, 9, 26, 0.92);
+      border: 2px solid #854dff;
+      border-radius: 14px;
+      padding: 24px 32px;
+      text-align: center;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 16px 40px rgba(0,0,0,0.8);
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="hud">
+    <div>Score: <span id="score" style="color: #38bdf8;">0</span></div>
+    <div>Lives: <span id="lives" style="color: #ef4444;">❤️❤️❤️</span></div>
+  </div>
+  <canvas id="gameCanvas" width="600" height="500"></canvas>
+
+  <div id="msgBox" class="msg-box">
+    <h2 style="font-size: 26px; color: #a37aff; margin-bottom: 8px;">BRICK BREAKER GALAXY</h2>
+    <p style="font-size: 14px; color: #ccc; margin-bottom: 16px;">Move Mouse or Drag Touch to Control Paddle</p>
+    <div style="font-size: 15px; color: #38bdf8; font-weight: 700;">TAP TO LAUNCH BALL</div>
+  </div>
+
+  <script>
+    if (window.PlayGrid) PlayGrid.init();
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreEl = document.getElementById('score');
+    const livesEl = document.getElementById('lives');
+    const msgBox = document.getElementById('msgBox');
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playTone(freq, dur = 0.08, type = 'sine') {
+      if (!audioCtx) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+        osc.start();
+        osc.stop(audioCtx.currentTime + dur);
+      } catch (e) {}
+    }
+
+    let state = 'WAIT';
+    let score = 0;
+    let lives = 3;
+
+    const paddle = {
+      w: 100,
+      h: 14,
+      x: 250,
+      y: 460,
+      color: '#0ea5e9'
+    };
+
+    const ball = {
+      x: 300,
+      y: 440,
+      r: 7,
+      vx: 4,
+      vy: -4,
+      speed: 5
+    };
+
+    let bricks = [];
+    let particles = [];
+    const BRICK_ROWS = 5;
+    const BRICK_COLS = 8;
+    const BRICK_W = 62;
+    const BRICK_H = 20;
+    const BRICK_PADDING = 8;
+    const BRICK_OFFSET_TOP = 40;
+    const BRICK_OFFSET_LEFT = 22;
+
+    const ROW_COLORS = ['#ef4444', '#f97316', '#eab308', '#10b981', '#8b5cf6'];
+
+    function initBricks() {
+      bricks = [];
+      for (let r = 0; r < BRICK_ROWS; r++) {
+        for (let c = 0; c < BRICK_COLS; c++) {
+          bricks.push({
+            x: c * (BRICK_W + BRICK_PADDING) + BRICK_OFFSET_LEFT,
+            y: r * (BRICK_H + BRICK_PADDING) + BRICK_OFFSET_TOP,
+            color: ROW_COLORS[r],
+            alive: true,
+            pts: (BRICK_ROWS - r) * 20
+          });
+        }
+      }
+    }
+
+    function resetBall() {
+      ball.x = paddle.x + paddle.w / 2;
+      ball.y = paddle.y - 14;
+      ball.vx = (Math.random() > 0.5 ? 4 : -4);
+      ball.vy = -4.5;
+    }
+
+    function startGame() {
+      score = 0;
+      lives = 3;
+      scoreEl.innerText = score;
+      updateLives();
+      initBricks();
+      resetBall();
+      state = 'PLAY';
+      msgBox.style.display = 'none';
+    }
+
+    function updateLives() {
+      livesEl.innerText = '❤️'.repeat(lives);
+    }
+
+    function createSpark(x, y, color) {
+      for (let i = 0; i < 8; i++) {
+        particles.push({
+          x, y,
+          vx: (Math.random() - 0.5) * 6,
+          vy: (Math.random() - 0.5) * 6,
+          life: 18,
+          color
+        });
+      }
+    }
+
+    function gameOver() {
+      state = 'OVER';
+      playTone(130, 0.4, 'sawtooth');
+      msgBox.innerHTML = `
+        <h2 style="font-size: 26px; color: #ef4444; margin-bottom: 6px;">GAME OVER</h2>
+        <p style="font-size: 18px; color: #fff; margin-bottom: 12px;">Final Score: <strong>${score}</strong></p>
+        <div style="font-size: 14px; color: #38bdf8; font-weight: 700;">TAP TO RESTART</div>
+      `;
+      msgBox.style.display = 'block';
+
+      if (window.PlayGrid) {
+        PlayGrid.submitScore(score, { livesRemaining: lives });
+      }
+    }
+
+    function victory() {
+      state = 'OVER';
+      playTone(660, 0.4, 'sine');
+      msgBox.innerHTML = `
+        <h2 style="font-size: 26px; color: #22c55e; margin-bottom: 6px;">GALAXY CLEARED!</h2>
+        <p style="font-size: 18px; color: #fff; margin-bottom: 12px;">Victory Score: <strong>${score}</strong></p>
+        <div style="font-size: 14px; color: #38bdf8; font-weight: 700;">PLAY AGAIN</div>
+      `;
+      msgBox.style.display = 'block';
+
+      if (window.PlayGrid) {
+        PlayGrid.submitScore(score + 1000, { victory: true });
+      }
+    }
+
+    // Mouse & Touch tracking for paddle
+    function updatePaddleX(clientX) {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const x = (clientX - rect.left) * scaleX - paddle.w / 2;
+      paddle.x = Math.max(0, Math.min(canvas.width - paddle.w, x));
+    }
+
+    window.addEventListener('mousemove', e => {
+      updatePaddleX(e.clientX);
+    });
+
+    window.addEventListener('touchmove', e => {
+      if (e.touches.length > 0) updatePaddleX(e.touches[0].clientX);
+    }, { passive: true });
+
+    window.addEventListener('pointerdown', () => {
+      if (state === 'WAIT' || state === 'OVER') {
+        startGame();
+      }
+    });
+
+    function update() {
+      if (state === 'PLAY') {
+        ball.x += ball.vx;
+        ball.y += ball.vy;
+
+        // Walls
+        if (ball.x - ball.r <= 0 || ball.x + ball.r >= canvas.width) {
+          ball.vx = -ball.vx;
+          playTone(300, 0.05);
+        }
+        if (ball.y - ball.r <= 0) {
+          ball.vy = -ball.vy;
+          playTone(300, 0.05);
+        }
+
+        // Paddle Collision
+        if (
+          ball.y + ball.r >= paddle.y &&
+          ball.y - ball.r <= paddle.y + paddle.h &&
+          ball.x >= paddle.x &&
+          ball.x <= paddle.x + paddle.w
+        ) {
+          // Angle bounce based on hit position
+          const hit = (ball.x - (paddle.x + paddle.w / 2)) / (paddle.w / 2);
+          ball.vx = hit * 6;
+          ball.vy = -Math.abs(ball.vy);
+          playTone(480, 0.08, 'triangle');
+        }
+
+        // Bottom Miss
+        if (ball.y - ball.r > canvas.height) {
+          lives--;
+          updateLives();
+          playTone(180, 0.2, 'sawtooth');
+          if (lives <= 0) {
+            gameOver();
+            return;
+          } else {
+            resetBall();
+          }
+        }
+
+        // Brick Collision
+        let allCleared = true;
+        for (const b of bricks) {
+          if (!b.alive) continue;
+          allCleared = false;
+
+          if (
+            ball.x + ball.r > b.x &&
+            ball.x - ball.r < b.x + BRICK_W &&
+            ball.y + ball.r > b.y &&
+            ball.y - ball.r < b.y + BRICK_H
+          ) {
+            b.alive = false;
+            ball.vy = -ball.vy;
+            score += b.pts;
+            scoreEl.innerText = score;
+            playTone(400 + b.pts * 4, 0.08, 'triangle');
+            createSpark(b.x + BRICK_W / 2, b.y + BRICK_H / 2, b.color);
+            break;
+          }
+        }
+
+        if (allCleared) {
+          victory();
+          return;
+        }
+      }
+
+      // Particles
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life--;
+        if (p.life <= 0) particles.splice(i, 1);
+      }
+    }
+
+    function render() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw Bricks
+      for (const b of bricks) {
+        if (!b.alive) continue;
+        ctx.fillStyle = b.color;
+        ctx.beginPath();
+        ctx.roundRect(b.x, b.y, BRICK_W, BRICK_H, 4);
+        ctx.fill();
+
+        ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+
+      // Draw Paddle
+      ctx.fillStyle = paddle.color;
+      ctx.beginPath();
+      ctx.roundRect(paddle.x, paddle.y, paddle.w, paddle.h, 7);
+      ctx.fill();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Draw Ball
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#38bdf8';
+      ctx.beginPath();
+      ctx.arc(ball.x - 2, ball.y - 2, ball.r * 0.4, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Draw Particles
+      for (const p of particles) {
+        ctx.fillStyle = p.color;
+        ctx.fillRect(p.x, p.y, 3, 3);
+      }
+    }
+
+    function loop() {
+      update();
+      render();
+      requestAnimationFrame(loop);
+    }
+
+    initBricks();
+    loop();
+  </script>
+</body>
+</html>
+

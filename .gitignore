@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.*
+
+# Next.js build output
+.next/
+out/
+build/
+dist/
+
+# Environment variables & secrets (NEVER commit these)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env*.local
+
+# TypeScript & build caches
+*.tsbuildinfo
+next-env.d.ts
+.eslintcache
+
+# Logs & debug files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# OS & editor files
+.DS_Store
+Thumbs.db
+*.pem
+.vscode/
+.idea/
+
+# Supabase local temp
+supabase/.branches
+supabase/.temp
+

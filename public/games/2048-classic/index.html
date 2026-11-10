@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>2048 Classic</title>
+  <script src="/sdk/playgrid-sdk.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; }
+    body {
+      background: #0d091a;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 16px;
+      user-select: none;
+    }
+    .header {
+      width: 100%;
+      max-width: 420px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .title-box h1 {
+      font-size: 38px;
+      font-weight: 800;
+      color: #ffbe3b;
+      line-height: 1;
+      text-shadow: 0 0 15px rgba(255,190,59,0.4);
+    }
+    .scores {
+      display: flex;
+      gap: 10px;
+    }
+    .score-card {
+      background: #1b132e;
+      border: 1px solid rgba(255,255,255,0.1);
+      padding: 6px 14px;
+      border-radius: 10px;
+      text-align: center;
+      min-width: 80px;
+    }
+    .score-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.5);
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .score-val {
+      font-size: 18px;
+      font-weight: 800;
+      color: #fff;
+    }
+    .board-container {
+      position: relative;
+      background: #19122c;
+      border-radius: 14px;
+      padding: 12px;
+      width: 100%;
+      max-width: 420px;
+      aspect-ratio: 1;
+      border: 2px solid rgba(133, 77, 255, 0.3);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      grid-template-rows: repeat(4, 1fr);
+      gap: 10px;
+      width: 100%;
+      height: 100%;
+    }
+    .cell {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 26px;
+      transition: transform 0.12s ease, background 0.12s ease;
+      color: #fff;
+    }
+    .tile-2 { background: #3b2a59; color: #ede9fe; }
+    .tile-4 { background: #4c3275; color: #ede9fe; }
+    .tile-8 { background: #6720ff; color: #ffffff; box-shadow: 0 0 10px rgba(103,32,255,0.4); }
+    .tile-16 { background: #854dff; color: #ffffff; box-shadow: 0 0 12px rgba(133,77,255,0.5); }
+    .tile-32 { background: #0284c7; color: #ffffff; box-shadow: 0 0 12px rgba(2,132,199,0.5); }
+    .tile-64 { background: #0ea5e9; color: #ffffff; box-shadow: 0 0 14px rgba(14,165,233,0.6); }
+    .tile-128 { background: #f59e0b; color: #ffffff; font-size: 22px; box-shadow: 0 0 16px rgba(245,158,11,0.6); }
+    .tile-256 { background: #eab308; color: #ffffff; font-size: 22px; box-shadow: 0 0 18px rgba(234,179,8,0.7); }
+    .tile-512 { background: #22c55e; color: #ffffff; font-size: 20px; box-shadow: 0 0 20px rgba(34,197,94,0.7); }
+    .tile-1024 { background: #ec4899; color: #ffffff; font-size: 18px; box-shadow: 0 0 22px rgba(236,72,153,0.8); }
+    .tile-2048 { background: #e11d48; color: #ffffff; font-size: 18px; box-shadow: 0 0 25px rgba(225,29,72,0.9); animation: pulse 1s infinite alternate; }
+    @keyframes pulse {
+      from { transform: scale(1); }
+      to { transform: scale(1.06); }
+    }
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(13, 9, 26, 0.92);
+      border-radius: 14px;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      backdrop-filter: blur(8px);
+    }
+    .overlay.active { display: flex; }
+    .btn {
+      background: linear-gradient(135deg, #6720ff, #0ea5e9);
+      border: none;
+      color: white;
+      font-weight: 700;
+      padding: 10px 22px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: transform 0.1s, opacity 0.2s;
+    }
+    .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+    .instructions {
+      margin-top: 16px;
+      font-size: 12px;
+      color: rgba(255,255,255,0.4);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="title-box">
+      <h1>2048</h1>
+    </div>
+    <div class="scores">
+      <div class="score-card">
+        <div class="score-label">Score</div>
+        <div class="score-val" id="score">0</div>
+      </div>
+      <div class="score-card">
+        <div class="score-label">Best</div>
+        <div class="score-val" id="best">0</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="board-container" id="boardContainer">
+    <div class="grid" id="grid"></div>
+    <div class="overlay" id="overlay">
+      <h2 style="font-size: 28px; font-weight: 800; color: #ffbe3b;" id="overlayTitle">Game Over!</h2>
+      <p style="color: rgba(255,255,255,0.7); font-size: 14px;" id="overlaySub">No more moves possible.</p>
+      <button class="btn" onclick="restartGame()">Play Again</button>
+    </div>
+  </div>
+
+  <div class="instructions">
+    Swipe or use Arrow Keys / WASD to join numbers to reach <strong>2048</strong>!
+  </div>
+
+  <script>
+    if (window.PlayGrid) PlayGrid.init();
+
+    const SIZE = 4;
+    let grid = [];
+    let score = 0;
+    let best = Number(localStorage.getItem('pg_2048_best') || 0);
+    document.getElementById('best').innerText = best;
+
+    // Web Audio Sound Synth
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playBeep(freq, dur) {
+      if (!audioCtx) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+        osc.start();
+        osc.stop(audioCtx.currentTime + dur);
+      } catch (e) {}
+    }
+
+    function initBoard() {
+      grid = Array(SIZE).fill(null).map(() => Array(SIZE).fill(0));
+      score = 0;
+      updateScore(0);
+      document.getElementById('overlay').classList.remove('active');
+      addRandomTile();
+      addRandomTile();
+      render();
+    }
+
+    function addRandomTile() {
+      const empty = [];
+      for (let r = 0; r < SIZE; r++) {
+        for (let c = 0; c < SIZE; c++) {
+          if (grid[r][c] === 0) empty.push({ r, c });
+        }
+      }
+      if (empty.length === 0) return;
+      const { r, c } = empty[Math.floor(Math.random() * empty.length)];
+      grid[r][c] = Math.random() < 0.9 ? 2 : 4;
+    }
+
+    function updateScore(add) {
+      score += add;
+      document.getElementById('score').innerText = score;
+      if (score > best) {
+        best = score;
+        localStorage.setItem('pg_2048_best', best);
+        document.getElementById('best').innerText = best;
+      }
+    }
+
+    function render() {
+      const container = document.getElementById('grid');
+      container.innerHTML = '';
+      for (let r = 0; r < SIZE; r++) {
+        for (let c = 0; c < SIZE; c++) {
+          const val = grid[r][c];
+          const div = document.createElement('div');
+          div.className = 'cell' + (val > 0 ? ' tile-' + val : '');
+          div.innerText = val > 0 ? val : '';
+          container.appendChild(div);
+        }
+      }
+    }
+
+    function slide(row) {
+      let filtered = row.filter(val => val !== 0);
+      for (let i = 0; i < filtered.length - 1; i++) {
+        if (filtered[i] === filtered[i + 1]) {
+          filtered[i] *= 2;
+          updateScore(filtered[i]);
+          playBeep(200 + filtered[i] * 2, 0.1);
+          filtered[i + 1] = 0;
+        }
+      }
+      filtered = filtered.filter(val => val !== 0);
+      while (filtered.length < SIZE) filtered.push(0);
+      return filtered;
+    }
+
+    function moveLeft() {
+      let changed = false;
+      for (let r = 0; r < SIZE; r++) {
+        const next = slide(grid[r]);
+        if (next.join(',') !== grid[r].join(',')) changed = true;
+        grid[r] = next;
+      }
+      return changed;
+    }
+
+    function rotate() {
+      const next = Array(SIZE).fill(null).map(() => Array(SIZE).fill(0));
+      for (let r = 0; r < SIZE; r++) {
+        for (let c = 0; c < SIZE; c++) {
+          next[c][SIZE - 1 - r] = grid[r][c];
+        }
+      }
+      grid = next;
+    }
+
+    function move(dir) {
+      let moved = false;
+      if (dir === 'left') moved = moveLeft();
+      else if (dir === 'down') { rotate(); moved = moveLeft(); rotate(); rotate(); rotate(); }
+      else if (dir === 'right') { rotate(); rotate(); moved = moveLeft(); rotate(); rotate(); }
+      else if (dir === 'up') { rotate(); rotate(); rotate(); moved = moveLeft(); rotate(); }
+
+      if (moved) {
+        addRandomTile();
+        render();
+        if (checkGameOver()) {
+          endGame();
+        }
+      }
+    }
+
+    function checkGameOver() {
+      for (let r = 0; r < SIZE; r++) {
+        for (let c = 0; c < SIZE; c++) {
+          if (grid[r][c] === 0) return false;
+          if (c < SIZE - 1 && grid[r][c] === grid[r][c + 1]) return false;
+          if (r < SIZE - 1 && grid[r][c] === grid[r + 1][c]) return false;
+        }
+      }
+      return true;
+    }
+
+    function endGame() {
+      playBeep(120, 0.4);
+      document.getElementById('overlay').classList.add('active');
+      if (window.PlayGrid) {
+        PlayGrid.submitScore(score, { bestScore: best });
+      }
+    }
+
+    function restartGame() {
+      initBoard();
+    }
+
+    // Keyboard controls
+    window.addEventListener('keydown', e => {
+      if (['ArrowUp', 'KeyW'].includes(e.code)) { e.preventDefault(); move('up'); }
+      else if (['ArrowDown', 'KeyS'].includes(e.code)) { e.preventDefault(); move('down'); }
+      else if (['ArrowLeft', 'KeyA'].includes(e.code)) { e.preventDefault(); move('left'); }
+      else if (['ArrowRight', 'KeyD'].includes(e.code)) { e.preventDefault(); move('right'); }
+    });
+
+    // Touch Controls
+    let startX = 0, startY = 0;
+    const board = document.getElementById('boardContainer');
+    board.addEventListener('touchstart', e => {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+    }, { passive: true });
+
+    board.addEventListener('touchend', e => {
+      const dx = e.changedTouches[0].clientX - startX;
+      const dy = e.changedTouches[0].clientY - startY;
+      if (Math.abs(dx) > 30 || Math.abs(dy) > 30) {
+        if (Math.abs(dx) > Math.abs(dy)) {
+          move(dx > 0 ? 'right' : 'left');
+        } else {
+          move(dy > 0 ? 'down' : 'up');
+        }
+      }
+    }, { passive: true });
+
+    initBoard();
+  </script>
+</body>
+</html>
+

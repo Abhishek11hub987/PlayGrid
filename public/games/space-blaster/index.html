@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Space Blaster 3000</title>
+  <script src="/sdk/playgrid-sdk.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #030712; color: #fff; font-family: monospace; display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
+    #canvas { background: #050b1a; border-radius: 12px; box-shadow: 0 10px 40px rgba(14,165,233,0.3); max-width: 100%; max-height: 100%; }
+    .overlay { position: absolute; top: 16px; left: 16px; font-size: 16px; font-weight: bold; pointer-events: none; }
+    .center-card { position: absolute; background: rgba(15,23,42,0.9); padding: 20px 32px; border-radius: 12px; border: 2px solid #38bdf8; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="overlay">
+    <div>SCORE: <span id="scoreVal">0</span></div>
+    <div>LIVES: <span id="livesVal">3</span></div>
+  </div>
+  <canvas id="canvas" width="600" height="700"></canvas>
+  <div id="card" class="center-card">
+    <h2 style="color:#38bdf8;font-size:24px;margin-bottom:8px;">SPACE BLASTER</h2>
+    <p style="color:#cbd5e1;font-size:13px;margin-bottom:12px;">Move mouse / Touch to pilot & fire lasers</p>
+    <p style="color:#a855f7;font-weight:bold;cursor:pointer;">CLICK TO START</p>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const scoreVal = document.getElementById('scoreVal');
+    const livesVal = document.getElementById('livesVal');
+    const card = document.getElementById('card');
+
+    let state = 'WAIT';
+    let score = 0;
+    let lives = 3;
+    let frame = 0;
+
+    const ship = { x: 300, y: 620, w: 32, h: 32, speed: 7 };
+    let bullets = [];
+    let enemies = [];
+    let particles = [];
+    let stars = [];
+
+    for (let i = 0; i < 70; i++) {
+      stars.push({ x: Math.random() * 600, y: Math.random() * 700, s: Math.random() * 2 + 1, v: Math.random() * 1.5 + 0.5 });
+    }
+
+    function reset() {
+      score = 0;
+      lives = 3;
+      frame = 0;
+      bullets = [];
+      enemies = [];
+      particles = [];
+      scoreVal.innerText = '0';
+      livesVal.innerText = '3';
+    }
+
+    function start() {
+      if (state === 'WAIT' || state === 'OVER') {
+        reset();
+        state = 'PLAY';
+        card.style.display = 'none';
+      }
+    }
+
+    window.addEventListener('pointerdown', start);
+    window.addEventListener('pointermove', e => {
+      const rect = canvas.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * canvas.width;
+      ship.x = Math.max(20, Math.min(canvas.width - 20, x));
+    });
+
+    function spawnExplosion(x, y, color, count = 12) {
+      for (let i = 0; i < count; i++) {
+        particles.push({
+          x, y,
+          vx: (Math.random() - 0.5) * 8,
+          vy: (Math.random() - 0.5) * 8,
+          life: 20,
+          color
+        });
+      }
+    }
+
+    function update() {
+      frame++;
+      // Move stars
+      for (const s of stars) {
+        s.y += s.v;
+        if (s.y > 700) s.y = 0;
+      }
+
+      if (state === 'PLAY') {
+        // Auto fire bullet
+        if (frame % 12 === 0) {
+          bullets.push({ x: ship.x, y: ship.y - 10, w: 4, h: 12, vy: -12 });
+        }
+
+        // Spawn enemies
+        if (frame % 45 === 0) {
+          enemies.push({
+            x: Math.random() * (canvas.width - 60) + 30,
+            y: -30,
+            w: 28,
+            h: 24,
+            vy: Math.random() * 2 + 2.5,
+            hp: 1,
+            color: Math.random() > 0.5 ? '#ef4444' : '#a855f7'
+          });
+        }
+
+        // Update bullets
+        for (let i = bullets.length - 1; i >= 0; i--) {
+          const b = bullets[i];
+          b.y += b.vy;
+          if (b.y < -20) bullets.splice(i, 1);
+        }
+
+        // Update enemies
+        for (let i = enemies.length - 1; i >= 0; i--) {
+          const en = enemies[i];
+          en.y += en.vy;
+
+          // Bullet hits enemy
+          for (let j = bullets.length - 1; j >= 0; j--) {
+            const b = bullets[j];
+            if (Math.hypot(en.x - b.x, en.y - b.y) < 22) {
+              bullets.splice(j, 1);
+              spawnExplosion(en.x, en.y, en.color, 16);
+              score += 150;
+              scoreVal.innerText = score;
+              enemies.splice(i, 1);
+              break;
+            }
+          }
+
+          // Enemy hits ship
+          if (Math.hypot(en.x - ship.x, en.y - ship.y) < 30) {
+            spawnExplosion(en.x, en.y, '#ef4444', 20);
+            enemies.splice(i, 1);
+            lives -= 1;
+            livesVal.innerText = lives;
+            if (lives <= 0) {
+              state = 'OVER';
+              card.innerHTML = '<h2 style="color:#ef4444;margin-bottom:8px;">GAME OVER</h2><p style="color:#fff;margin-bottom:12px;">Final Score: ' + score + '</p><p style="color:#38bdf8;">CLICK TO RETRY</p>';
+              card.style.display = 'block';
+              if (window.PlayGrid) PlayGrid.submitScore(score);
+            }
+          }
+
+          if (en.y > 720) enemies.splice(i, 1);
+        }
+      }
+
+      // Update particles
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life--;
+        if (p.life <= 0) particles.splice(i, 1);
+      }
+    }
+
+    function render() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Starfield
+      ctx.fillStyle = '#64748b';
+      for (const s of stars) {
+        ctx.fillRect(s.x, s.y, s.s, s.s);
+      }
+
+      // Bullets
+      ctx.fillStyle = '#38bdf8';
+      for (const b of bullets) {
+        ctx.fillRect(b.x - 2, b.y, b.w, b.h);
+      }
+
+      // Enemies
+      for (const en of enemies) {
+        ctx.fillStyle = en.color;
+        ctx.beginPath();
+        ctx.moveTo(en.x, en.y + en.h);
+        ctx.lineTo(en.x - en.w / 2, en.y);
+        ctx.lineTo(en.x + en.w / 2, en.y);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // Player Ship
+      if (state !== 'OVER') {
+        ctx.save();
+        ctx.translate(ship.x, ship.y);
+        ctx.fillStyle = '#0ea5e9';
+        ctx.beginPath();
+        ctx.moveTo(0, -18);
+        ctx.lineTo(-14, 14);
+        ctx.lineTo(0, 8);
+        ctx.lineTo(14, 14);
+        ctx.closePath();
+        ctx.fill();
+        // Cockpit
+        ctx.fillStyle = '#38bdf8';
+        ctx.beginPath();
+        ctx.arc(0, -2, 4, 0, Math.PI * 2);
+        ctx.fill();
+        // Thruster flame
+        ctx.fillStyle = '#f59e0b';
+        ctx.fillRect(-3, 10, 6, 6 + Math.random() * 6);
+        ctx.restore();
+      }
+
+      // Particles
+      for (const p of particles) {
+        ctx.fillStyle = p.color;
+        ctx.fillRect(p.x, p.y, 3, 3);
+      }
+    }
+
+    function loop() {
+      update();
+      render();
+      requestAnimationFrame(loop);
+    }
+    loop();
+  </script>
+</body>
+</html>
+
