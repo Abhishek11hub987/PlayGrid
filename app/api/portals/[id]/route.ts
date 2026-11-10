@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { requirePortalAccess } from '@/lib/auth/get-user'
 import { updatePortalSchema } from '@/lib/validations/api-schemas'
 
 export async function GET(
@@ -8,8 +9,12 @@ export async function GET(
 ) {
   try {
     const { id } = await params
-    const supabase = await createClient()
+    const auth = await requirePortalAccess(id)
+    if (!auth.ok) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status })
+    }
 
+    const supabase = await createClient()
     const { data: portal, error } = await supabase
       .from('portals')
       .select('*')
@@ -33,6 +38,11 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params
+    const auth = await requirePortalAccess(id)
+    if (!auth.ok) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status })
+    }
+
     const body = await request.json()
     const validated = updatePortalSchema.parse(body)
 
@@ -74,6 +84,11 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params
+    const auth = await requirePortalAccess(id)
+    if (!auth.ok) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status })
+    }
+
     const supabase = await createClient()
 
     // Soft delete

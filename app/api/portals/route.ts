@@ -1,15 +1,17 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { getAuthUser } from '@/lib/auth/get-user'
 import { createPortalSchema } from '@/lib/validations/api-schemas'
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
+    const user = await getAuthUser()
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    const supabase = user.isSuperAdmin ? createAdminClient() : await createClient()
 
     const { data: portals, error } = await supabase
       .from('portals')
@@ -29,15 +31,15 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
+    const user = await getAuthUser()
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const body = await request.json()
     const validated = createPortalSchema.parse(body)
+
+    const supabase = await createClient()
 
     // Check slug uniqueness
     const { data: existing } = await supabase

@@ -39,7 +39,9 @@ export function LoginForm() {
       return
     }
 
-    router.push('/')
+    const rawRedirect = new URLSearchParams(window.location.search).get('redirect')
+    const target = rawRedirect && rawRedirect.startsWith('/') && !rawRedirect.startsWith('//') ? rawRedirect : '/'
+    router.push(target)
     router.refresh()
   }
 

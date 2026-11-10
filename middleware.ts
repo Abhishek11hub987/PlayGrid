@@ -2,14 +2,40 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 
+function redirectToLogin(request: NextRequest, pathname: string) {
+  const loginUrl = new URL('/login', request.url)
+  loginUrl.searchParams.set('redirect', pathname)
+  return NextResponse.redirect(loginUrl)
+}
+
+function isLocalhostHost(request: NextRequest): boolean {
+  if (process.env.VERCEL || process.env.VERCEL_ENV) {
+    return false
+  }
+  const host = (request.headers.get('x-forwarded-host') || request.nextUrl.hostname || '').toLowerCase()
+  return (
+    host === 'localhost' ||
+    host.startsWith('localhost:') ||
+    host === '127.0.0.1' ||
+    host.startsWith('127.0.0.1:')
+  )
+}
+
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
+
+  const { pathname } = request.nextUrl
+  const isLocalhost = isLocalhostHost(request)
+  const isProtectedPage = pathname.startsWith('/dashboard') || pathname.startsWith('/admin')
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-  // In development without live Supabase credentials, pass through seamlessly
+  // Pass through on localhost without live credentials; block protected routes on deployed hosts.
   if (!url || !key || url.includes('your_supabase') || url.includes('placeholder')) {
+    if (!isLocalhost && isProtectedPage) {
+      return redirectToLogin(request, pathname)
+    }
     return supabaseResponse
   }
 
@@ -32,17 +58,14 @@ export async function middleware(request: NextRequest) {
     )
 
     const { data: { user } } = await supabase.auth.getUser()
-    const { pathname, hostname } = request.nextUrl
-    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1'
 
-    // Protect dashboard routes on live public deployment without active session
-    if (!isLocalhost && (pathname.startsWith('/dashboard') || pathname.startsWith('/admin'))) {
-      if (!user) {
-        return NextResponse.redirect(new URL('/login', request.url))
-      }
+    if (!isLocalhost && isProtectedPage && !user) {
+      return redirectToLogin(request, pathname)
     }
   } catch {
-    // Fail open in edge middleware, layout will enforce authorization
+    if (!isLocalhost && isProtectedPage) {
+      return redirectToLogin(request, pathname)
+    }
   }
 
   return supabaseResponse

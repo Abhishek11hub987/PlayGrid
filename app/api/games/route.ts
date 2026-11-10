@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { createGameSchema } from '@/lib/validations/api-schemas'
+import { getAuthUser } from '@/lib/auth/get-user'
 
 export async function GET(request: Request) {
   try {
@@ -59,15 +59,38 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const user = await getAuthUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
+    if (!user.isSuperAdmin && user.systemRole !== 'publisher') {
+      return NextResponse.json(
+        { error: 'Forbidden: publisher or super admin access required' },
+        { status: 403 }
+      )
+    }
+
     const body = await request.json()
 
-    if (!body.title) {
+    if (!body.title || typeof body.title !== 'string') {
       return NextResponse.json({ error: 'Game title is required.' }, { status: 400 })
     }
 
     const gameUrl = body.game_url || body.gameUrl
-    if (!gameUrl) {
+    if (!gameUrl || typeof gameUrl !== 'string') {
       return NextResponse.json({ error: 'Game Embed URL is required.' }, { status: 400 })
+    }
+
+    const trimmedUrl = gameUrl.trim()
+    const isSafeUrl =
+      trimmedUrl.startsWith('https://') ||
+      trimmedUrl.startsWith('http://') ||
+      trimmedUrl.startsWith('/games/')
+    if (!isSafeUrl) {
+      return NextResponse.json(
+        { error: 'Game Embed URL must use https://, http://, or /games/ path.' },
+        { status: 400 }
+      )
     }
 
     const thumbnailUrl = body.thumbnail_url || body.thumbnailUrl || 'https://picsum.photos/seed/' + encodeURIComponent(body.title) + '/600/450'
@@ -76,11 +99,11 @@ export async function POST(request: Request) {
     const { repository } = await import('@/lib/data/repository')
 
     const createdGame = await repository.addGame({
-      title: body.title,
+      title: body.title.trim(),
       slug: body.slug,
       description: body.description || 'Exciting browser game with instant play.',
       short_description: body.short_description || body.shortDescription,
-      game_url: gameUrl,
+      game_url: trimmedUrl,
       thumbnail_url: thumbnailUrl,
       category_id: categoryId,
       developer: body.developer || 'GameDistribution Partner',
@@ -93,15 +116,17 @@ export async function POST(request: Request) {
         : typeof body.tags === 'string'
           ? body.tags.split(',').map((t: string) => t.trim()).filter(Boolean)
           : ['html5', 'arcade'],
-      approval_status: 'approved',
-      is_active: true,
-      is_featured: !!body.is_featured || !!body.isFeatured,
+      approval_status: user.isSuperAdmin ? 'approved' : 'pending',
+      is_active: user.isSuperAdmin,
+      is_featured: user.isSuperAdmin ? Boolean(body.is_featured || body.isFeatured) : false,
     })
 
     return NextResponse.json({
       success: true,
       data: createdGame,
-      message: 'Game successfully added to catalog and active portals!',
+      message: user.isSuperAdmin
+        ? 'Game successfully added to catalog and active portals!'
+        : 'Game submitted for Super Admin review!',
     }, { status: 201 })
   } catch (err: any) {
     console.error('API /games POST error:', err)

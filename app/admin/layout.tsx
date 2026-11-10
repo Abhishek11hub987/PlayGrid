@@ -4,7 +4,10 @@ import { AdminSidebar } from '@/components/admin/sidebar'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const user = await getAuthUser()
-  if (!user || (!user.isSuperAdmin && user.systemRole !== 'super_admin')) {
+  if (!user) {
+    redirect('/login?redirect=/admin')
+  }
+  if (!user.isSuperAdmin && user.systemRole !== 'super_admin') {
     redirect('/')
   }
 
