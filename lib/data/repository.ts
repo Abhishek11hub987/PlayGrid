@@ -463,8 +463,18 @@ export const repository = {
 
   async addGame(input: Partial<Game>): Promise<Game> {
     const rawSlug = input.slug || input.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `game-${Date.now()}`
-    const slug = rawSlug.toLowerCase().replace(/[^a-z0-9-]+/g, '')
+    let slug = rawSlug.toLowerCase().replace(/[^a-z0-9-]+/g, '') || `game-${Date.now()}`
     const id = input.id || `game-${Date.now()}`
+
+    // Resolve category against live/fallback categories (handles both UUIDs and slugs / demo IDs like 'cat-3')
+    const liveCategories = await this.getCategories()
+    const demoCat = DEMO_CATEGORIES.find(c => c.id === input.category_id || c.slug === input.category_id)
+    const matchedCategory =
+      liveCategories.find(c => c.id === input.category_id || c.slug === input.category_id) ||
+      (demoCat ? liveCategories.find(c => c.slug === demoCat.slug) : undefined) ||
+      liveCategories[0]
+
+    const resolvedCategoryId = matchedCategory?.id || input.category_id || 'cat-3'
 
     const newGame: Game = {
       id,
@@ -474,7 +484,7 @@ export const repository = {
       short_description: input.short_description || (input.description?.slice(0, 120) ?? 'Action-packed HTML5 game.'),
       thumbnail_url: input.thumbnail_url || 'https://picsum.photos/seed/' + slug + '/600/450',
       banner_url: input.banner_url || input.thumbnail_url || 'https://picsum.photos/seed/' + slug + '/1200/500',
-      category_id: input.category_id || 'cat-3',
+      category_id: resolvedCategoryId,
       developer: input.developer || 'GameDistribution Partner',
       developer_url: input.developer_url || 'https://playgrid.io',
       game_url: input.game_url || '',
@@ -496,60 +506,75 @@ export const repository = {
       metadata: input.metadata || {},
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-      category: input.category,
+      category: matchedCategory || input.category,
     }
 
-    try {
-      if (isSupabaseConfigured()) {
-        const supabase = createAdminClient()
-        const { data, error } = await supabase.from('games').insert({
-          title: newGame.title,
-          slug: newGame.slug,
-          description: newGame.description,
-          short_description: newGame.short_description,
-          thumbnail_url: newGame.thumbnail_url,
-          banner_url: newGame.banner_url,
-          category_id: (input.category_id && input.category_id.length > 10) ? input.category_id : null,
-          developer: newGame.developer,
-          developer_url: newGame.developer_url,
-          game_url: newGame.game_url,
-          game_type: newGame.game_type,
-          technology: newGame.technology,
-          orientation: newGame.orientation,
-          supported_devices: newGame.supported_devices,
-          instructions: newGame.instructions,
-          controls: newGame.controls,
-          tags: newGame.tags,
-          approval_status: newGame.approval_status,
-          is_active: newGame.is_active,
-          is_featured: newGame.is_featured,
-          play_count: newGame.play_count,
-          rating_average: newGame.rating_average,
-          rating_count: newGame.rating_count,
-          license_type: newGame.license_type,
-          iframe_sandbox_allow: newGame.iframe_sandbox_allow,
-        }).select().single()
+    if (isSupabaseConfigured() && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      const supabase = createAdminClient()
 
-        if (!error && data) {
-          newGame.id = data.id
-          try {
-            const { data: portals } = await supabase.from('portals').select('id')
-            if (portals && portals.length > 0) {
-              await supabase.from('portal_games').insert(
-                portals.map((p: any) => ({
-                  portal_id: p.id,
-                  game_id: data.id,
-                  is_enabled: true
-                }))
-              )
-            }
-          } catch (portalErr) {
-            console.warn('Could not auto-link portal games:', portalErr)
+      const { data: existingSlug } = await supabase
+        .from('games')
+        .select('id')
+        .eq('slug', slug)
+        .maybeSingle()
+
+      if (existingSlug) {
+        slug = `${slug}-${Date.now().toString(36).slice(-4)}`
+        newGame.slug = slug
+      }
+
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+      const dbCategoryId = uuidRegex.test(resolvedCategoryId) ? resolvedCategoryId : null
+
+      const { data, error } = await supabase.from('games').insert({
+        title: newGame.title,
+        slug: newGame.slug,
+        description: newGame.description,
+        short_description: newGame.short_description,
+        thumbnail_url: newGame.thumbnail_url,
+        banner_url: newGame.banner_url,
+        category_id: dbCategoryId,
+        developer: newGame.developer,
+        developer_url: newGame.developer_url,
+        game_url: newGame.game_url,
+        game_type: newGame.game_type,
+        technology: newGame.technology,
+        orientation: newGame.orientation,
+        supported_devices: newGame.supported_devices,
+        instructions: newGame.instructions,
+        controls: newGame.controls,
+        tags: newGame.tags,
+        approval_status: newGame.approval_status,
+        is_active: newGame.is_active,
+        is_featured: newGame.is_featured,
+        play_count: newGame.play_count,
+        rating_average: newGame.rating_average,
+        rating_count: newGame.rating_count,
+        license_type: newGame.license_type,
+        iframe_sandbox_allow: newGame.iframe_sandbox_allow,
+      }).select().single()
+
+      if (error) {
+        throw new Error(error.message)
+      }
+
+      if (data) {
+        newGame.id = data.id
+        try {
+          const { data: portals } = await supabase.from('portals').select('id')
+          if (portals && portals.length > 0) {
+            await supabase.from('portal_games').insert(
+              portals.map((p: any) => ({
+                portal_id: p.id,
+                game_id: data.id,
+                is_enabled: true
+              }))
+            )
           }
+        } catch (portalErr) {
+          console.warn('Could not auto-link portal games:', portalErr)
         }
       }
-    } catch (err) {
-      console.warn('Repository addGame database insert fallback:', err)
     }
 
     DEMO_GAMES.unshift(newGame)

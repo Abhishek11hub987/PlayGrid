@@ -12,7 +12,7 @@ export function DemoAdBanner({ placementKey, orientation = 'horizontal', classNa
   if (orientation === 'vertical') {
     return (
       <div className={cn(
-        'relative flex flex-col items-center justify-center rounded-xl border border-white/10 bg-surface-900/60 backdrop-blur-sm w-full',
+        'relative flex flex-col items-center justify-center rounded-xl border border-white/10 bg-surface-900/80 w-full',
         'min-h-[250px] p-4 text-center overflow-hidden',
         className
       )}>
@@ -33,7 +33,7 @@ export function DemoAdBanner({ placementKey, orientation = 'horizontal', classNa
 
   return (
     <div className={cn(
-      'relative flex items-center justify-between rounded-xl border border-white/10 bg-surface-900/60 backdrop-blur-sm w-full h-[90px] px-6 overflow-hidden',
+      'relative flex items-center justify-between rounded-xl border border-white/10 bg-surface-900/80 w-full h-[90px] px-6 overflow-hidden',
       className
     )}>
       <div className="flex items-center gap-3">

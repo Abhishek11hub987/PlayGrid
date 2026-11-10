@@ -21,10 +21,58 @@ function isLocalhostHost(request: NextRequest): boolean {
   )
 }
 
-function hasSupabaseAuthCookie(request: NextRequest): boolean {
-  return request.cookies.getAll().some(
-    c => c.name.startsWith('sb-') && c.name.includes('auth-token')
-  )
+function getCombinedAuthCookieValue(request: NextRequest): string | null {
+  const authCookies = request.cookies
+    .getAll()
+    .filter(c => c.name.startsWith('sb-') && c.name.includes('auth-token'))
+
+  if (authCookies.length === 0) return null
+
+  const exact = authCookies.find(c => c.name.endsWith('auth-token'))
+  if (exact) return exact.value
+
+  return authCookies
+    .sort((a, b) => {
+      const idxA = Number(a.name.split('.').pop() || 0)
+      const idxB = Number(b.name.split('.').pop() || 0)
+      return idxA - idxB
+    })
+    .map(c => c.value)
+    .join('')
+}
+
+function decodeBase64Url(input: string): string {
+  const normalized = input.replace(/-/g, '+').replace(/_/g, '/')
+  const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), '=')
+  return atob(padded)
+}
+
+/**
+ * Checks locally whether the session JWT still has >120s validity so Edge middleware
+ * does not stall every navigation with an extra remote Supabase Auth round-trip.
+ * Protected layouts still verify sessions cryptographically via getAuthUser().
+ */
+function hasFreshSupabaseJwt(cookieValue: string): boolean {
+  try {
+    const raw = cookieValue.startsWith('base64-')
+      ? decodeBase64Url(cookieValue.slice(7))
+      : decodeURIComponent(cookieValue)
+    const parsed = JSON.parse(raw)
+    const accessToken =
+      parsed?.access_token ||
+      parsed?.currentSession?.access_token ||
+      (Array.isArray(parsed) ? parsed[0] : null)
+
+    if (typeof accessToken !== 'string') return false
+    const parts = accessToken.split('.')
+    if (parts.length !== 3) return false
+
+    const payload = JSON.parse(decodeBase64Url(parts[1]))
+    const exp = Number(payload?.exp || 0)
+    return exp > Math.floor(Date.now() / 1000) + 120
+  } catch {
+    return false
+  }
 }
 
 export async function middleware(request: NextRequest) {
@@ -36,7 +84,8 @@ export async function middleware(request: NextRequest) {
   const isPrefetch =
     request.headers.get('next-router-prefetch') === '1' ||
     request.headers.get('purpose') === 'prefetch'
-  const hasSessionCookie = hasSupabaseAuthCookie(request)
+  const rawAuthCookie = getCombinedAuthCookieValue(request)
+  const hasSessionCookie = Boolean(rawAuthCookie)
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -46,8 +95,16 @@ export async function middleware(request: NextRequest) {
     return redirectToLogin(request, pathname)
   }
 
-  // Skip remote Supabase auth round-trips when no session cookie exists or during link prefetches
-  if (!hasSessionCookie || isPrefetch || !url || !key || url.includes('your_supabase') || url.includes('placeholder')) {
+  // Skip remote Supabase auth round-trips when no cookie exists, on prefetches, or when JWT is fresh
+  if (
+    !rawAuthCookie ||
+    isPrefetch ||
+    !url ||
+    !key ||
+    url.includes('your_supabase') ||
+    url.includes('placeholder') ||
+    hasFreshSupabaseJwt(rawAuthCookie)
+  ) {
     return supabaseResponse
   }
 

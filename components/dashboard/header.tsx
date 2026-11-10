@@ -30,7 +30,7 @@ export function DashboardHeader({ user }: { user: AuthUser }) {
     .slice(0, 2)
 
   return (
-    <header className="h-16 border-b border-white/5 px-6 flex items-center justify-between bg-surface-900/60 backdrop-blur-md">
+    <header className="h-16 border-b border-white/5 px-6 flex items-center justify-between bg-surface-900/95">
       <div className="flex items-center gap-3">
         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-brand-500/15 border border-brand-500/30 text-brand-300">
           <Sparkles className="h-3.5 w-3.5 text-brand-400" />

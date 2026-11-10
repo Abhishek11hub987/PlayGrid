@@ -1,8 +1,47 @@
 import { cache } from 'react'
+import { unstable_cache } from 'next/cache'
 import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Profile, SystemRole } from '@/types'
+
+const getCachedProfileById = unstable_cache(
+  async (userId: string): Promise<Profile | null> => {
+    try {
+      const adminClient = createAdminClient()
+      const { data } = await adminClient
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single()
+      return data ?? null
+    } catch {
+      return null
+    }
+  },
+  ['playgrid-profile-by-id'],
+  { revalidate: 15, tags: ['profiles'] }
+)
+
+const getCachedLocalhostSuperAdmin = unstable_cache(
+  async (): Promise<Profile | null> => {
+    try {
+      const adminClient = createAdminClient()
+      const { data } = await adminClient
+        .from('profiles')
+        .select('*')
+        .eq('system_role', 'super_admin')
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .single()
+      return data ?? null
+    } catch {
+      return null
+    }
+  },
+  ['playgrid-localhost-super-admin'],
+  { revalidate: 30, tags: ['profiles'] }
+)
 
 export interface AuthUser {
   id: string
@@ -51,15 +90,7 @@ export const getAuthUser = cache(async (): Promise<AuthUser | null> => {
         !process.env.SUPABASE_SERVICE_ROLE_KEY!.includes('your_supabase')
 
       if (hasServiceKey) {
-        try {
-          const adminClient = createAdminClient()
-          const { data: adminProfile } = await adminClient
-            .from('profiles')
-            .select('*')
-            .eq('id', user.id)
-            .single()
-          profile = adminProfile
-        } catch {}
+        profile = await getCachedProfileById(user.id)
       }
 
       if (!profile) {
@@ -97,15 +128,7 @@ export const getAuthUser = cache(async (): Promise<AuthUser | null> => {
 
     // Localhost convenience: load real super admin profile from Supabase when available
     try {
-      const adminClient = createAdminClient()
-      const { data: superAdminProfile } = await adminClient
-        .from('profiles')
-        .select('*')
-        .eq('system_role', 'super_admin')
-        .order('created_at', { ascending: true })
-        .limit(1)
-        .single()
-
+      const superAdminProfile = await getCachedLocalhostSuperAdmin()
       if (superAdminProfile) {
         return {
           id: superAdminProfile.id,

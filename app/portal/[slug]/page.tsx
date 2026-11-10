@@ -37,7 +37,7 @@ export default async function TenantPortalPage({ params }: { params: Promise<{ s
       background: 'linear-gradient(180deg, #07040d 0%, #030712 100%)'
     }}>
       {/* White-label Portal Navbar */}
-      <header className="sticky top-0 z-50 border-b border-white/5 bg-surface-950/80 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 border-b border-white/5 bg-surface-950/95">
         <div className="container mx-auto px-4 max-w-7xl h-16 flex items-center justify-between">
           <Link href={`/portal/${portal.slug}`} className="flex items-center gap-2.5">
             <div

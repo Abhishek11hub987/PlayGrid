@@ -18,17 +18,10 @@ export function HeroSection({ featuredGames }: HeroSectionProps) {
       <div className="absolute inset-0 bg-gaming" />
       <div className="absolute inset-0 bg-hero-glow" />
 
-      {/* Hero game background blur */}
-      {hero && (
-        <div className="absolute inset-0 opacity-20">
-          <Image src={heroThumb} alt="" fill className="object-cover blur-xl scale-110" priority />
-        </div>
-      )}
-
       <div className="relative container mx-auto px-4 max-w-7xl py-20">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           {/* Left: headline */}
-          <div className="space-y-6 animate-slide-up">
+          <div className="space-y-6">
             <div className="inline-flex items-center gap-2 bg-brand-500/10 border border-brand-500/20 rounded-full px-4 py-1.5 text-sm text-brand-300">
               <Zap className="h-4 w-4" />
               <span>Free HTML5 Games — No Download Needed</span>
@@ -63,7 +56,7 @@ export function HeroSection({ featuredGames }: HeroSectionProps) {
 
           {/* Right: featured game card */}
           {hero && (
-            <div className="relative animate-float">
+            <div className="relative">
               <div className="relative rounded-2xl overflow-hidden gradient-border shadow-2xl shadow-brand-500/20">
                 <Image
                   src={heroThumb}

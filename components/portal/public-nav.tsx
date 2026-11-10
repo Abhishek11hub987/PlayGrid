@@ -19,7 +19,7 @@ export function PublicNav() {
   const [mobileOpen, setMobileOpen] = useState(false)
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-white/5 bg-surface-950/90 backdrop-blur-xl">
+    <nav className="sticky top-0 z-50 border-b border-white/5 bg-surface-950/95">
       <div className="container mx-auto px-4 max-w-7xl">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
@@ -60,15 +60,15 @@ export function PublicNav() {
               </Button>
             </Link>
 
-            {/* Quick Demo shortcuts to Publisher & Super Admin */}
-            <Link href="/dashboard" className="hidden lg:flex">
+            {/* Shortcuts to Publisher & Super Admin */}
+            <Link href="/dashboard" className="hidden md:flex">
               <Button variant="ghost" size="sm" className="gap-1.5 text-xs text-white/70 hover:text-white border border-white/10">
                 <LayoutDashboard className="h-3.5 w-3.5 text-brand-400" />
                 Publisher SaaS
               </Button>
             </Link>
 
-            <Link href="/admin" className="hidden lg:flex">
+            <Link href="/admin" className="hidden md:flex">
               <Button variant="ghost" size="sm" className="gap-1.5 text-xs text-yellow-400/90 hover:text-yellow-300 border border-yellow-500/20 bg-yellow-500/5">
                 <Shield className="h-3.5 w-3.5 text-yellow-400" />
                 Admin Panel
