@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { safeRevalidateTag } from '@/lib/data/repository'
 import { gamePlayEventSchema } from '@/lib/validations/api-schemas'
 
 export async function POST(
@@ -30,6 +31,8 @@ export async function POST(
       .from('games')
       .update({ play_count: newPlayCount, updated_at: new Date().toISOString() })
       .eq('id', game.id)
+
+    safeRevalidateTag('games')
 
     // 3. Record gameplay session telemetry
     const sessionRecord = {

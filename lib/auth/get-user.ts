@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -33,7 +34,11 @@ export async function isLocalhostRequest(): Promise<boolean> {
   }
 }
 
-export async function getAuthUser(): Promise<AuthUser | null> {
+/**
+ * Per-request memoized auth resolution so layouts and nested server components
+ * do not execute duplicate Supabase auth and profile queries.
+ */
+export const getAuthUser = cache(async (): Promise<AuthUser | null> => {
   try {
     const supabase = await createClient()
     const { data, error } = await supabase.auth.getUser()
@@ -132,7 +137,7 @@ export async function getAuthUser(): Promise<AuthUser | null> {
   } catch {
     return null
   }
-}
+})
 
 export async function requireAuth() {
   const user = await getAuthUser()

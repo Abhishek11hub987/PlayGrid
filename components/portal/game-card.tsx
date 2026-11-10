@@ -21,14 +21,14 @@ export function GameCard({ game, size = 'md' }: GameCardProps) {
             src={thumbnailSrc}
             alt={game.title}
             fill
-            className="object-cover transition-transform duration-300 group-hover:scale-110"
+            className="object-cover transition-transform duration-150 group-hover:scale-105"
             sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 16vw"
           />
           {/* Overlay on hover */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-150" />
           
           {/* Play button */}
-          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-150">
             <div className="bg-brand-500 rounded-full p-3 shadow-lg shadow-brand-500/50">
               <Play className="h-6 w-6 text-white fill-white" />
             </div>

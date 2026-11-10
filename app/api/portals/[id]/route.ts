@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { requirePortalAccess } from '@/lib/auth/get-user'
+import { safeRevalidateTag } from '@/lib/data/repository'
 import { updatePortalSchema } from '@/lib/validations/api-schemas'
 
 export async function GET(
@@ -69,6 +70,7 @@ export async function PATCH(
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
+    safeRevalidateTag('portals')
     return NextResponse.json({ data, message: 'Portal updated successfully' })
   } catch (err: any) {
     if (err.errors) {
@@ -101,6 +103,7 @@ export async function DELETE(
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
+    safeRevalidateTag('portals')
     return NextResponse.json({ success: true, message: 'Portal deleted' })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })

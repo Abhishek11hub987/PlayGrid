@@ -8,8 +8,10 @@ import { formatCurrency, formatNumber } from '@/lib/utils'
 export const metadata = { title: 'Advertising Manager | PlayGrid' }
 
 export default async function AdvertisingPage() {
-  const placements = await repository.getAdPlacements()
-  const portals = await repository.getPortals()
+  const [placements, portals] = await Promise.all([
+    repository.getAdPlacements(),
+    repository.getPortals(),
+  ])
 
   const adMetrics = {
     impressions: 890400,

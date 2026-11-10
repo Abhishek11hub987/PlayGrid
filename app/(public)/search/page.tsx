@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { repository } from '@/lib/data/repository'
 import { GameGrid } from '@/components/portal/game-grid'
 import { SearchInput } from '@/components/portal/search-input'
 import { Search } from 'lucide-react'
@@ -20,18 +20,13 @@ export default async function SearchPage({ searchParams }: PageProps) {
   let count = 0
 
   if (q && q.trim().length >= 2) {
-    const supabase = await createClient()
-    const { data, count: c } = await supabase
-      .from('games')
-      .select('*, category:game_categories(*)', { count: 'exact' })
-      .eq('approval_status', 'approved')
-      .eq('is_active', true)
-      .or(`title.ilike.%${q}%,description.ilike.%${q}%,tags.cs.{${q}}`)
-      .order('play_count', { ascending: false })
-      .range(offset, offset + pageSize - 1)
-
-    games = (data ?? []) as Game[]
-    count = c ?? 0
+    const res = await repository.getGames({
+      search: q.trim(),
+      limit: pageSize,
+      offset,
+    })
+    games = res.data
+    count = res.count
   }
 
   const totalPages = Math.ceil(count / pageSize)

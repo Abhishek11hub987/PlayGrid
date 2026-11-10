@@ -1,14 +1,15 @@
 'use client'
 
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import { Search, X } from 'lucide-react'
+import { Loader2, Search, X } from 'lucide-react'
 import { Input } from '@/components/ui/input'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useTransition } from 'react'
 
 export function SearchInput({ defaultValue }: { defaultValue?: string }) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const [isPending, startTransition] = useTransition()
   const [q, setQ] = useState(defaultValue ?? '')
 
   useEffect(() => { setQ(defaultValue ?? '') }, [defaultValue])
@@ -19,17 +20,25 @@ export function SearchInput({ defaultValue }: { defaultValue?: string }) {
     const params = new URLSearchParams(searchParams.toString())
     params.set('q', q.trim())
     params.delete('page')
-    router.push(`${pathname}?${params.toString()}`)
+    startTransition(() => {
+      router.push(`${pathname}?${params.toString()}`)
+    })
   }
 
   function handleClear() {
     setQ('')
-    router.push(pathname)
+    startTransition(() => {
+      router.push(pathname)
+    })
   }
 
   return (
     <form onSubmit={handleSubmit} className="relative">
-      <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40" />
+      {isPending ? (
+        <Loader2 className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-brand-400 animate-spin" />
+      ) : (
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40" />
+      )}
       <Input
         value={q}
         onChange={e => setQ(e.target.value)}

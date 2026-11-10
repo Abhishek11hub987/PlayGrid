@@ -31,10 +31,6 @@
     box-sizing: border-box;
   }
 
-  html {
-    scroll-behavior: smooth;
-  }
-
   body {
     @apply bg-surface-950 text-white antialiased;
     font-family: var(--font-geist-sans), 'Inter', system-ui, -apple-system, sans-serif;
@@ -65,10 +61,9 @@
     text-shadow: 0 0 20px rgba(14, 165, 233, 0.5);
   }
 
-  /* Glass morphism card */
+  /* Translucent surface card (fast GPU compositing without heavy blur stutter) */
   .glass-card {
-    background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(16px);
+    background: rgba(15, 23, 42, 0.78);
     border: 1px solid rgba(255, 255, 255, 0.08);
   }
 
@@ -93,12 +88,12 @@
 
   /* Game card hover */
   .game-card {
-    @apply relative overflow-hidden rounded-xl transition-all duration-300 cursor-pointer;
+    @apply relative overflow-hidden rounded-xl transition-[transform,box-shadow] duration-150 cursor-pointer;
   }
 
   .game-card:hover {
-    transform: translateY(-4px) scale(1.02);
-    box-shadow: 0 20px 40px rgba(103, 32, 255, 0.2);
+    transform: translateY(-3px);
+    box-shadow: 0 14px 28px rgba(103, 32, 255, 0.18);
   }
 
   /* Demo data badge */
@@ -108,7 +103,7 @@
 
   /* Sidebar nav item */
   .nav-item {
-    @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/60 transition-all hover:text-white hover:bg-white/8;
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/60 transition-colors duration-150 hover:text-white hover:bg-white/8;
   }
 
   .nav-item.active {

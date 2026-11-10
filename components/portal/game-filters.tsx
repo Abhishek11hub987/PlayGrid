@@ -1,12 +1,12 @@
 'use client'
 
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import { Search, SlidersHorizontal, X } from 'lucide-react'
+import { Search, Loader2, X } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import type { GameCategory } from '@/types'
-import { useCallback, useState } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 
 interface GameFiltersProps {
   categories: GameCategory[]
@@ -25,14 +25,27 @@ export function GameFilters({ categories, selectedCategory, selectedSort = 'popu
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const [isPending, startTransition] = useTransition()
   const [q, setQ] = useState(searchQuery ?? '')
+  const [optimisticCategory, setOptimisticCategory] = useState<string | undefined>(selectedCategory)
+  const [optimisticSort, setOptimisticSort] = useState<string>(selectedSort)
+
+  useEffect(() => {
+    setOptimisticCategory(selectedCategory)
+    setOptimisticSort(selectedSort)
+  }, [selectedCategory, selectedSort])
 
   function updateParam(key: string, value: string | undefined) {
+    if (key === 'category') setOptimisticCategory(value)
+    if (key === 'sort') setOptimisticSort(value || 'popular')
+
     const params = new URLSearchParams(searchParams.toString())
     if (value) params.set(key, value)
     else params.delete(key)
     params.delete('page')
-    router.push(`${pathname}?${params.toString()}`)
+    startTransition(() => {
+      router.push(`${pathname}?${params.toString()}`)
+    })
   }
 
   function handleSearch(e: React.FormEvent) {
@@ -63,15 +76,18 @@ export function GameFilters({ categories, selectedCategory, selectedSort = 'popu
 
       {/* Sort */}
       <div>
-        <h3 className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-3">Sort by</h3>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-xs font-semibold text-white/40 uppercase tracking-wider">Sort by</h3>
+          {isPending && <Loader2 className="h-3.5 w-3.5 text-brand-400 animate-spin" />}
+        </div>
         <div className="space-y-1">
           {SORT_OPTIONS.map(opt => (
             <button
               key={opt.value}
               onClick={() => updateParam('sort', opt.value)}
               className={cn(
-                'w-full text-left px-3 py-2 rounded-lg text-sm transition-colors',
-                selectedSort === opt.value
+                'w-full text-left px-3 py-2 rounded-lg text-sm transition-colors duration-100',
+                optimisticSort === opt.value
                   ? 'bg-brand-500/20 text-brand-300 border border-brand-500/30'
                   : 'text-white/60 hover:text-white hover:bg-white/8'
               )}
@@ -89,8 +105,8 @@ export function GameFilters({ categories, selectedCategory, selectedSort = 'popu
           <button
             onClick={() => updateParam('category', undefined)}
             className={cn(
-              'w-full text-left px-3 py-2 rounded-lg text-sm transition-colors',
-              !selectedCategory
+              'w-full text-left px-3 py-2 rounded-lg text-sm transition-colors duration-100',
+              !optimisticCategory
                 ? 'bg-brand-500/20 text-brand-300 border border-brand-500/30'
                 : 'text-white/60 hover:text-white hover:bg-white/8'
             )}
@@ -102,8 +118,8 @@ export function GameFilters({ categories, selectedCategory, selectedSort = 'popu
               key={cat.id}
               onClick={() => updateParam('category', cat.slug)}
               className={cn(
-                'w-full text-left px-3 py-2 rounded-lg text-sm transition-colors',
-                selectedCategory === cat.slug
+                'w-full text-left px-3 py-2 rounded-lg text-sm transition-colors duration-100',
+                optimisticCategory === cat.slug
                   ? 'bg-brand-500/20 text-brand-300 border border-brand-500/30'
                   : 'text-white/60 hover:text-white hover:bg-white/8'
               )}
@@ -115,8 +131,18 @@ export function GameFilters({ categories, selectedCategory, selectedSort = 'popu
       </div>
 
       {/* Clear filters */}
-      {(selectedCategory || searchQuery || selectedSort !== 'popular') && (
-        <Button variant="outline" size="sm" className="w-full" onClick={() => router.push(pathname)}>
+      {(optimisticCategory || searchQuery || optimisticSort !== 'popular') && (
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full"
+          onClick={() => {
+            setQ('')
+            setOptimisticCategory(undefined)
+            setOptimisticSort('popular')
+            startTransition(() => router.push(pathname))
+          }}
+        >
           <X className="h-4 w-4 mr-2" /> Clear filters
         </Button>
       )}

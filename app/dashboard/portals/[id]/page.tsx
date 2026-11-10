@@ -6,9 +6,12 @@ export const metadata = { title: 'Visual Portal Builder | PlayGrid' }
 
 export default async function PortalBuilderPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const portal = await repository.getPortalById(id)
-  const allGames = (await repository.getGames({ limit: 50 })).data
-  const categories = await repository.getCategories()
+  const [portal, gamesRes, categories] = await Promise.all([
+    repository.getPortalById(id),
+    repository.getGames({ limit: 50 }),
+    repository.getCategories(),
+  ])
+  const allGames = gamesRes.data
 
   if (!portal) notFound()
 

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { requirePortalAccess } from '@/lib/auth/get-user'
+import { safeRevalidateTag } from '@/lib/data/repository'
 
 export async function POST(
   request: Request,
@@ -32,6 +33,7 @@ export async function POST(
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
+    safeRevalidateTag('portals')
     return NextResponse.json({
       success: true,
       isPublished: publish,

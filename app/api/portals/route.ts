@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getAuthUser } from '@/lib/auth/get-user'
+import { safeRevalidateTag } from '@/lib/data/repository'
 import { createPortalSchema } from '@/lib/validations/api-schemas'
 
 export async function GET() {
@@ -82,6 +83,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
+    safeRevalidateTag('portals')
     return NextResponse.json({ data: data || newPortal, message: 'Portal created successfully' }, { status: 201 })
   } catch (err: any) {
     if (err.errors) {

@@ -6,31 +6,18 @@ import { TrendingGames } from '@/components/portal/trending-games'
 import { RecentGames } from '@/components/portal/recent-games'
 import { LeaderboardPreview } from '@/components/portal/leaderboard-preview'
 import { DemoAdBanner } from '@/components/ads/demo-ad-banner'
-import { createClient } from '@/lib/supabase/server'
+import { repository } from '@/lib/data/repository'
 import type { Game, GameCategory } from '@/types'
 
 async function getHomePageData() {
-  const supabase = await createClient()
-
-  const [gamesRes, categoriesRes] = await Promise.all([
-    supabase
-      .from('games')
-      .select('*, category:game_categories(*)')
-      .eq('approval_status', 'approved')
-      .eq('is_active', true)
-      .is('deleted_at', null)
-      .order('play_count', { ascending: false })
-      .limit(40),
-    supabase
-      .from('game_categories')
-      .select('*')
-      .eq('is_active', true)
-      .order('sort_order'),
+  const [gamesRes, categories] = await Promise.all([
+    repository.getGames({ limit: 40, sort: 'popular' }),
+    repository.getCategories(),
   ])
 
   return {
-    games: (gamesRes.data ?? []) as Game[],
-    categories: (categoriesRes.data ?? []) as GameCategory[],
+    games: gamesRes.data as Game[],
+    categories: categories.filter(c => c.is_active) as GameCategory[],
   }
 }
 

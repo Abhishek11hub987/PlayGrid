@@ -1,5 +1,5 @@
 import { Suspense } from 'react'
-import { createClient } from '@/lib/supabase/server'
+import { repository } from '@/lib/data/repository'
 import { GameGrid } from '@/components/portal/game-grid'
 import { GameFilters } from '@/components/portal/game-filters'
 import type { Game, GameCategory } from '@/types'
@@ -17,32 +17,18 @@ export default async function GamesPage({ searchParams }: PageProps) {
   const pageSize = 24
   const offset = (pageNum - 1) * pageSize
 
-  const supabase = await createClient()
+  const [{ data: games, count }, allCategories] = await Promise.all([
+    repository.getGames({
+      categorySlug: category,
+      sort,
+      search: q,
+      limit: pageSize,
+      offset,
+    }),
+    repository.getCategories(),
+  ])
 
-  let query = supabase
-    .from('games')
-    .select('*, category:game_categories(*)', { count: 'exact' })
-    .eq('approval_status', 'approved')
-    .eq('is_active', true)
-    .is('deleted_at', null)
-
-  if (q) query = query.ilike('title', `%${q}%`)
-  if (category) {
-    const { data: cat } = await supabase.from('game_categories').select('id').eq('slug', category).single()
-    if (cat) query = query.eq('category_id', cat.id)
-  }
-
-  if (sort === 'popular') query = query.order('play_count', { ascending: false })
-  else if (sort === 'recent') query = query.order('created_at', { ascending: false })
-  else if (sort === 'rating') query = query.order('rating_average', { ascending: false })
-
-  const { data: games, count } = await query.range(offset, offset + pageSize - 1)
-
-  const { data: categories } = await supabase
-    .from('game_categories')
-    .select('*')
-    .eq('is_active', true)
-    .order('sort_order')
+  const categories = allCategories.filter(c => c.is_active)
 
   const totalPages = Math.ceil((count ?? 0) / pageSize)
 

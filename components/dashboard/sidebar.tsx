@@ -7,7 +7,7 @@ import {
   DollarSign, Users, Settings, Shield, ChevronLeft, Menu
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { AuthUser } from '@/lib/auth/get-user'
 
 const NAV_ITEMS = [
@@ -25,6 +25,13 @@ const NAV_ITEMS = [
 export function DashboardSidebar({ user }: { user: AuthUser }) {
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
+  const [pendingHref, setPendingHref] = useState<string | null>(null)
+
+  useEffect(() => {
+    setPendingHref(null)
+  }, [pathname])
+
+  const effectivePath = pendingHref ?? pathname
 
   return (
     <aside className={cn(
@@ -60,11 +67,11 @@ export function DashboardSidebar({ user }: { user: AuthUser }) {
           </p>
         )}
         {NAV_ITEMS.map(item => {
-          const active = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))
+          const active = effectivePath === item.href || (item.href !== '/dashboard' && effectivePath.startsWith(item.href))
           return (
-            <Link key={item.href} href={item.href}>
+            <Link key={item.href} href={item.href} onClick={() => setPendingHref(item.href)}>
               <div className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group',
+                'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors duration-100 group',
                 active
                   ? 'text-white bg-brand-500/20 border border-brand-500/30 text-brand-300'
                   : 'text-white/60 hover:text-white hover:bg-white/5',

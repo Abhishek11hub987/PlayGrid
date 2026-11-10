@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
@@ -27,6 +28,13 @@ const ADMIN_NAV = [
 
 export function AdminSidebar() {
   const pathname = usePathname()
+  const [pendingHref, setPendingHref] = useState<string | null>(null)
+
+  useEffect(() => {
+    setPendingHref(null)
+  }, [pathname])
+
+  const effectivePath = pendingHref ?? pathname
 
   return (
     <aside className="w-64 flex flex-col bg-surface-900 border-r border-yellow-500/20 shrink-0 z-20">
@@ -47,11 +55,11 @@ export function AdminSidebar() {
           Platform Operations
         </p>
         {ADMIN_NAV.map(item => {
-          const active = pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href))
+          const active = effectivePath === item.href || (item.href !== '/admin' && effectivePath.startsWith(item.href))
           return (
-            <Link key={item.href} href={item.href}>
+            <Link key={item.href} href={item.href} onClick={() => setPendingHref(item.href)}>
               <div className={cn(
-                'flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all',
+                'flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-colors duration-100',
                 active
                   ? 'text-yellow-400 bg-yellow-500/15 border border-yellow-500/30 font-bold'
                   : 'text-white/60 hover:text-white hover:bg-white/5'

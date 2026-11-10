@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { repository } from '@/lib/data/repository'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { GameCard } from '@/components/portal/game-card'
@@ -14,37 +14,25 @@ interface PageProps { params: Promise<{ slug: string }> }
 
 export async function generateMetadata({ params }: PageProps) {
   const { slug } = await params
-  const supabase = await createClient()
-  const { data } = await supabase.from('games').select('title, short_description').eq('slug', slug).single()
-  if (!data) return { title: 'Game Not Found' }
-  return { title: data.title, description: data.short_description }
+  const game = await repository.getGameBySlug(slug)
+  if (!game) return { title: 'Game Not Found' }
+  return { title: game.title, description: game.short_description }
 }
 
 export default async function GameDetailPage({ params }: PageProps) {
   const { slug } = await params
-  const supabase = await createClient()
 
-  const { data: game } = await supabase
-    .from('games')
-    .select('*, category:game_categories(*)')
-    .eq('slug', slug)
-    .eq('approval_status', 'approved')
-    .eq('is_active', true)
-    .single()
+  const [game, allGamesRes] = await Promise.all([
+    repository.getGameBySlug(slug),
+    repository.getGames({ limit: 16 }),
+  ])
 
-  if (!game) notFound()
+  if (!game || !game.is_active || game.approval_status !== 'approved') notFound()
 
   const g = game as Game
-
-  // Related games
-  const { data: related } = await supabase
-    .from('games')
-    .select('*, category:game_categories(*)')
-    .eq('category_id', g.category_id ?? '')
-    .eq('approval_status', 'approved')
-    .eq('is_active', true)
-    .neq('id', g.id)
-    .limit(6)
+  const related = allGamesRes.data
+    .filter(item => item.id !== g.id && (!g.category_id || item.category_id === g.category_id))
+    .slice(0, 6)
 
   const thumbnailSrc = g.thumbnail_url || `/thumbnails/${g.slug}.svg`
 

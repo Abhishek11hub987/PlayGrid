@@ -21,21 +21,33 @@ function isLocalhostHost(request: NextRequest): boolean {
   )
 }
 
+function hasSupabaseAuthCookie(request: NextRequest): boolean {
+  return request.cookies.getAll().some(
+    c => c.name.startsWith('sb-') && c.name.includes('auth-token')
+  )
+}
+
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
   const { pathname } = request.nextUrl
   const isLocalhost = isLocalhostHost(request)
   const isProtectedPage = pathname.startsWith('/dashboard') || pathname.startsWith('/admin')
+  const isPrefetch =
+    request.headers.get('next-router-prefetch') === '1' ||
+    request.headers.get('purpose') === 'prefetch'
+  const hasSessionCookie = hasSupabaseAuthCookie(request)
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-  // Pass through on localhost without live credentials; block protected routes on deployed hosts.
-  if (!url || !key || url.includes('your_supabase') || url.includes('placeholder')) {
-    if (!isLocalhost && isProtectedPage) {
-      return redirectToLogin(request, pathname)
-    }
+  // Block unauthenticated access on deployed hosts immediately without network latency
+  if (!isLocalhost && isProtectedPage && (!hasSessionCookie || !url || !key || url.includes('your_supabase') || url.includes('placeholder'))) {
+    return redirectToLogin(request, pathname)
+  }
+
+  // Skip remote Supabase auth round-trips when no session cookie exists or during link prefetches
+  if (!hasSessionCookie || isPrefetch || !url || !key || url.includes('your_supabase') || url.includes('placeholder')) {
     return supabaseResponse
   }
 

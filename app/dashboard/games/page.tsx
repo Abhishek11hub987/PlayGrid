@@ -10,8 +10,10 @@ import Link from 'next/link'
 export const metadata = { title: 'Game Catalog & Distribution | PlayGrid' }
 
 export default async function PublisherGamesPage() {
-  const { data: games } = await repository.getGames({ limit: 100 })
-  const categories = await repository.getCategories()
+  const [{ data: games }] = await Promise.all([
+    repository.getGames({ limit: 100 }),
+    repository.getCategories(),
+  ])
 
   return (
     <div className="space-y-6">
