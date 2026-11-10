@@ -41,15 +41,23 @@ export async function getAuthUser(): Promise<AuthUser | null> {
 
     if (!error && user && user.id !== 'user-super-admin') {
       let profile: Profile | null = null
-      try {
-        const adminClient = createAdminClient()
-        const { data: adminProfile } = await adminClient
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single()
-        profile = adminProfile
-      } catch {
+      const hasServiceKey =
+        Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY) &&
+        !process.env.SUPABASE_SERVICE_ROLE_KEY!.includes('your_supabase')
+
+      if (hasServiceKey) {
+        try {
+          const adminClient = createAdminClient()
+          const { data: adminProfile } = await adminClient
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single()
+          profile = adminProfile
+        } catch {}
+      }
+
+      if (!profile) {
         const { data: userProfile } = await supabase
           .from('profiles')
           .select('*')
